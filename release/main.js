@@ -1795,7 +1795,7 @@ class Registry {
     constructor(options) {
         this._options = options;
         this._syncRegistry = new _registry__WEBPACK_IMPORTED_MODULE_0__.SyncRegistry(_theme__WEBPACK_IMPORTED_MODULE_2__.Theme.createFromRawTheme(options.theme, options.colorMap), options.onigLib);
-        this._ensureGrammarCache = new Map();
+        this._ensureGrammarCache = new Set();
     }
     dispose() {
         this._syncRegistry.dispose();
@@ -1832,18 +1832,18 @@ class Registry {
     loadGrammar(initialScopeName) {
         return this._loadGrammar(initialScopeName, 0, null, null);
     }
-    async _doLoadSingleGrammar(scopeName) {
-        const grammar = await this._options.loadGrammar(scopeName);
+    _doLoadSingleGrammar(scopeName) {
+        const grammar = this._options.loadGrammar(scopeName);
         if (grammar) {
             const injections = (typeof this._options.getInjections === 'function' ? this._options.getInjections(scopeName) : undefined);
             this._syncRegistry.addGrammar(grammar, injections);
         }
     }
-    async _loadSingleGrammar(scopeName) {
+    _loadSingleGrammar(scopeName) {
         if (!this._ensureGrammarCache.has(scopeName)) {
-            this._ensureGrammarCache.set(scopeName, this._doLoadSingleGrammar(scopeName));
+            this._doLoadSingleGrammar(scopeName);
+            this._ensureGrammarCache.add(scopeName);
         }
-        return this._ensureGrammarCache.get(scopeName);
     }
     _collectDependenciesForDep(initialScopeName, result, dep) {
         const grammar = this._syncRegistry.lookup(dep.scopeName);
@@ -1866,7 +1866,7 @@ class Registry {
             }
         }
     }
-    async _loadGrammar(initialScopeName, initialLanguage, embeddedLanguages, tokenTypes) {
+    _loadGrammar(initialScopeName, initialLanguage, embeddedLanguages, tokenTypes) {
         const seenFullScopeRequests = new Set();
         const seenPartialScopeRequests = new Set();
         seenFullScopeRequests.add(initialScopeName);
@@ -1874,7 +1874,7 @@ class Registry {
         while (Q.length > 0) {
             const q = Q;
             Q = [];
-            await Promise.all(q.map(request => this._loadSingleGrammar(request.scopeName)));
+            q.map(request => this._loadSingleGrammar(request.scopeName));
             const deps = new _grammar__WEBPACK_IMPORTED_MODULE_3__.ScopeDependencyCollector();
             for (const dep of q) {
                 this._collectDependenciesForDep(initialScopeName, deps, dep);
@@ -1905,9 +1905,9 @@ class Registry {
     /**
      * Adds a rawGrammar.
      */
-    async addGrammar(rawGrammar, injections = [], initialLanguage = 0, embeddedLanguages = null) {
+    addGrammar(rawGrammar, injections = [], initialLanguage = 0, embeddedLanguages = null) {
         this._syncRegistry.addGrammar(rawGrammar, injections);
-        return (await this.grammarForScopeName(rawGrammar.scopeName, initialLanguage, embeddedLanguages));
+        return this.grammarForScopeName(rawGrammar.scopeName, initialLanguage, embeddedLanguages);
     }
     /**
      * Get the grammar for `scopeName`. The grammar must first be created via `loadGrammar` or `addGrammar`.
@@ -2577,13 +2577,13 @@ class SyncRegistry {
     /**
      * Lookup a grammar.
      */
-    async grammarForScopeName(scopeName, initialLanguage, embeddedLanguages, tokenTypes) {
+    grammarForScopeName(scopeName, initialLanguage, embeddedLanguages, tokenTypes) {
         if (!this._grammars[scopeName]) {
             let rawGrammar = this._rawGrammars[scopeName];
             if (!rawGrammar) {
                 return null;
             }
-            this._grammars[scopeName] = (0,_grammar__WEBPACK_IMPORTED_MODULE_0__.createGrammar)(rawGrammar, initialLanguage, embeddedLanguages, tokenTypes, this, await this._onigLibPromise);
+            this._grammars[scopeName] = (0,_grammar__WEBPACK_IMPORTED_MODULE_0__.createGrammar)(rawGrammar, initialLanguage, embeddedLanguages, tokenTypes, this, this._onigLibPromise);
         }
         return this._grammars[scopeName];
     }

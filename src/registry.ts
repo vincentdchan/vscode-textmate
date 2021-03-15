@@ -14,9 +14,9 @@ export class SyncRegistry implements IGrammarRepository {
 	private readonly _rawGrammars: { [scopeName: string]: IRawGrammar; };
 	private readonly _injectionGrammars: { [scopeName: string]: string[]; };
 	private _theme: Theme;
-	private readonly _onigLibPromise: Promise<IOnigLib>;
+	private readonly _onigLibPromise: IOnigLib;
 
-	constructor(theme: Theme, onigLibPromise: Promise<IOnigLib>) {
+	constructor(theme: Theme, onigLibPromise: IOnigLib) {
 		this._theme = theme;
 		this._grammars = {};
 		this._rawGrammars = {};
@@ -86,13 +86,13 @@ export class SyncRegistry implements IGrammarRepository {
 	/**
 	 * Lookup a grammar.
 	 */
-	public async grammarForScopeName(scopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null, tokenTypes: ITokenTypeMap | null): Promise<IGrammar | null> {
+	public grammarForScopeName(scopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null, tokenTypes: ITokenTypeMap | null): IGrammar | null {
 		if (!this._grammars[scopeName]) {
 			let rawGrammar = this._rawGrammars[scopeName];
 			if (!rawGrammar) {
 				return null;
 			}
-			this._grammars[scopeName] = createGrammar(rawGrammar, initialLanguage, embeddedLanguages, tokenTypes, this, await this._onigLibPromise);
+			this._grammars[scopeName] = createGrammar(rawGrammar, initialLanguage, embeddedLanguages, tokenTypes, this, this._onigLibPromise);
 		}
 		return this._grammars[scopeName];
 	}

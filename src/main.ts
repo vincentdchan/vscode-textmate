@@ -35,10 +35,10 @@ export interface IRawTheme {
  * A registry helper that can locate grammar file paths given scope names.
  */
 export interface RegistryOptions {
-	onigLib: Promise<IOnigLib>;
+	onigLib: IOnigLib;
 	theme?: IRawTheme;
 	colorMap?: string[];
-	loadGrammar(scopeName: string): Promise<IRawGrammar | undefined | null>;
+	loadGrammar(scopeName: string): IRawGrammar | undefined | null;
 	getInjections?(scopeName: string): string[] | undefined;
 }
 
@@ -75,12 +75,12 @@ export class Registry {
 
 	private readonly _options: RegistryOptions;
 	private readonly _syncRegistry: SyncRegistry;
-	private readonly _ensureGrammarCache: Map<string, Promise<void>>;
+	private readonly _ensureGrammarCache: Set<string>;
 
 	constructor(options: RegistryOptions) {
 		this._options = options;
 		this._syncRegistry = new SyncRegistry(Theme.createFromRawTheme(options.theme, options.colorMap), options.onigLib);
-		this._ensureGrammarCache = new Map<string, Promise<void>>();
+		this._ensureGrammarCache = new Set<string>();
 	}
 
 	public dispose(): void {
@@ -105,7 +105,7 @@ export class Registry {
 	 * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
 	 * Please do not use language id 0.
 	 */
-	public loadGrammarWithEmbeddedLanguages(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap): Promise<IGrammar | null> {
+	public loadGrammarWithEmbeddedLanguages(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap): IGrammar | null {
 		return this.loadGrammarWithConfiguration(initialScopeName, initialLanguage, { embeddedLanguages });
 	}
 
@@ -113,30 +113,30 @@ export class Registry {
 	 * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
 	 * Please do not use language id 0.
 	 */
-	public loadGrammarWithConfiguration(initialScopeName: string, initialLanguage: number, configuration: IGrammarConfiguration): Promise<IGrammar | null> {
+	public loadGrammarWithConfiguration(initialScopeName: string, initialLanguage: number, configuration: IGrammarConfiguration): IGrammar | null {
 		return this._loadGrammar(initialScopeName, initialLanguage, configuration.embeddedLanguages, configuration.tokenTypes);
 	}
 
 	/**
 	 * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
 	 */
-	public loadGrammar(initialScopeName: string): Promise<IGrammar | null> {
+	public loadGrammar(initialScopeName: string): IGrammar | null {
 		return this._loadGrammar(initialScopeName, 0, null, null);
 	}
 
-	private async _doLoadSingleGrammar(scopeName: string): Promise<void> {
-		const grammar = await this._options.loadGrammar(scopeName);
+	private _doLoadSingleGrammar(scopeName: string): void {
+		const grammar = this._options.loadGrammar(scopeName);
 		if (grammar) {
 			const injections = (typeof this._options.getInjections === 'function' ? this._options.getInjections(scopeName) : undefined);
 			this._syncRegistry.addGrammar(grammar, injections);
 		}
 	}
 
-	private async _loadSingleGrammar(scopeName: string): Promise<void> {
+	private _loadSingleGrammar(scopeName: string): void {
 		if (!this._ensureGrammarCache.has(scopeName)) {
-			this._ensureGrammarCache.set(scopeName, this._doLoadSingleGrammar(scopeName));
+			this._doLoadSingleGrammar(scopeName);
+			this._ensureGrammarCache.add(scopeName);
 		}
-		return this._ensureGrammarCache.get(scopeName);
 	}
 
 	private _collectDependenciesForDep(initialScopeName: string, result: ScopeDependencyCollector, dep: FullScopeDependency | PartialScopeDependency) {
@@ -162,7 +162,7 @@ export class Registry {
 		}
 	}
 
-	private async _loadGrammar(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null | undefined, tokenTypes: ITokenTypeMap | null | undefined): Promise<IGrammar | null> {
+	private _loadGrammar(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap | null | undefined, tokenTypes: ITokenTypeMap | null | undefined): IGrammar | null {
 
 		const seenFullScopeRequests = new Set<string>();
 		const seenPartialScopeRequests = new Set<string>();
@@ -174,7 +174,7 @@ export class Registry {
 			const q = Q;
 			Q = [];
 
-			await Promise.all(q.map(request => this._loadSingleGrammar(request.scopeName)));
+			q.map(request => this._loadSingleGrammar(request.scopeName));
 
 			const deps = new ScopeDependencyCollector();
 			for (const dep of q) {
@@ -210,15 +210,15 @@ export class Registry {
 	/**
 	 * Adds a rawGrammar.
 	 */
-	public async addGrammar(rawGrammar: IRawGrammar, injections: string[] = [], initialLanguage: number = 0, embeddedLanguages: IEmbeddedLanguagesMap | null = null): Promise<IGrammar> {
+	public addGrammar(rawGrammar: IRawGrammar, injections: string[] = [], initialLanguage: number = 0, embeddedLanguages: IEmbeddedLanguagesMap | null = null): IGrammar {
 		this._syncRegistry.addGrammar(rawGrammar, injections);
-		return (await this.grammarForScopeName(rawGrammar.scopeName, initialLanguage, embeddedLanguages))!;
+		return this.grammarForScopeName(rawGrammar.scopeName, initialLanguage, embeddedLanguages)!;
 	}
 
 	/**
 	 * Get the grammar for `scopeName`. The grammar must first be created via `loadGrammar` or `addGrammar`.
 	 */
-	public grammarForScopeName(scopeName: string, initialLanguage: number = 0, embeddedLanguages: IEmbeddedLanguagesMap | null = null, tokenTypes: ITokenTypeMap | null = null): Promise<IGrammar | null> {
+	public grammarForScopeName(scopeName: string, initialLanguage: number = 0, embeddedLanguages: IEmbeddedLanguagesMap | null = null, tokenTypes: ITokenTypeMap | null = null): IGrammar | null {
 		return this._syncRegistry.grammarForScopeName(scopeName, initialLanguage, embeddedLanguages, tokenTypes);
 	}
 }

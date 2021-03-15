@@ -23,10 +23,10 @@ export interface IRawTheme {
  * A registry helper that can locate grammar file paths given scope names.
  */
 export interface RegistryOptions {
-    onigLib: Promise<IOnigLib>;
+    onigLib: IOnigLib;
     theme?: IRawTheme;
     colorMap?: string[];
-    loadGrammar(scopeName: string): Promise<IRawGrammar | undefined | null>;
+    loadGrammar(scopeName: string): IRawGrammar | undefined | null;
     getInjections?(scopeName: string): string[] | undefined;
 }
 /**
@@ -72,16 +72,16 @@ export declare class Registry {
      * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
      * Please do not use language id 0.
      */
-    loadGrammarWithEmbeddedLanguages(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap): Promise<IGrammar | null>;
+    loadGrammarWithEmbeddedLanguages(initialScopeName: string, initialLanguage: number, embeddedLanguages: IEmbeddedLanguagesMap): IGrammar | null;
     /**
      * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
      * Please do not use language id 0.
      */
-    loadGrammarWithConfiguration(initialScopeName: string, initialLanguage: number, configuration: IGrammarConfiguration): Promise<IGrammar | null>;
+    loadGrammarWithConfiguration(initialScopeName: string, initialLanguage: number, configuration: IGrammarConfiguration): IGrammar | null;
     /**
      * Load the grammar for `scopeName` and all referenced included grammars asynchronously.
      */
-    loadGrammar(initialScopeName: string): Promise<IGrammar | null>;
+    loadGrammar(initialScopeName: string): IGrammar | null;
     private _doLoadSingleGrammar;
     private _loadSingleGrammar;
     private _collectDependenciesForDep;
@@ -89,11 +89,11 @@ export declare class Registry {
     /**
      * Adds a rawGrammar.
      */
-    addGrammar(rawGrammar: IRawGrammar, injections?: string[], initialLanguage?: number, embeddedLanguages?: IEmbeddedLanguagesMap | null): Promise<IGrammar>;
+    addGrammar(rawGrammar: IRawGrammar, injections?: string[], initialLanguage?: number, embeddedLanguages?: IEmbeddedLanguagesMap | null): IGrammar;
     /**
      * Get the grammar for `scopeName`. The grammar must first be created via `loadGrammar` or `addGrammar`.
      */
-    grammarForScopeName(scopeName: string, initialLanguage?: number, embeddedLanguages?: IEmbeddedLanguagesMap | null, tokenTypes?: ITokenTypeMap | null): Promise<IGrammar | null>;
+    grammarForScopeName(scopeName: string, initialLanguage?: number, embeddedLanguages?: IEmbeddedLanguagesMap | null, tokenTypes?: ITokenTypeMap | null): IGrammar | null;
 }
 /**
  * A grammar
