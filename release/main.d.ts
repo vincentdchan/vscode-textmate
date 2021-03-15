@@ -183,3 +183,5 @@ export interface StackElement {
 }
 export declare const INITIAL: StackElement;
 export declare const parseRawGrammar: (content: string, filePath?: string) => IRawGrammar;
+export * as plist from './plist';
+export * as grammar from './grammar';

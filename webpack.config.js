@@ -6,8 +6,8 @@ const path = require('path');
 
 module.exports = {
 	entry: './out/main.js',
-	mode: 'production',
-	// mode: 'development',
+	// mode: 'production',
+	mode: 'development',
 	output: {
 		library: 'vscodetextmate',
 		libraryTarget: 'umd',
